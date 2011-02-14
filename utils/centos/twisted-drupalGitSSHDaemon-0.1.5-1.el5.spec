@@ -2,8 +2,8 @@
 
 Summary:    A TCP server for drupalGitSSHDaemon
 Name:       twisted-drupalGitSSHDaemon
-Version:    0.1.4
-Release:    3
+Version:    0.1.5
+Release:    1
 License:    Unknown
 Group:      Networking/Daemons
 Source:     twisted-drupalGitSSHDaemon-%{version}.tar.bz2
@@ -56,6 +56,9 @@ cp "twisted-drupalGitSSHDaemon.init" "$RPM_BUILD_ROOT"/etc/init.d/"twisted-drupa
 %attr(0660,root,root) /etc/twisted-keys
 
 %changelog
+* Sun Feb 20 2011 Trevor Hardcastle <chizu@spicious.com>
+- Bug fixes around error handling
+- Respect push control settings
 * Sat Feb 19 2011 Trevor Hardcastle <chizu@spicious.com>
 - Updated error messages (Sam Boyer)
 - Reroll for missed commit
