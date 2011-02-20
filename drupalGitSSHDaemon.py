@@ -15,6 +15,7 @@ from twisted.cred.checkers import ICredentialsChecker
 from twisted.cred.credentials import IUsernamePassword, ISSHPrivateKey
 from twisted.cred.portal import IRealm, Portal
 from twisted.internet import reactor, defer
+from twisted.internet.defer import DeferredList
 from twisted.python import components, log
 from twisted.python.failure import Failure
 from zope import interface
@@ -58,16 +59,18 @@ class DrupalMeta(object):
                     ssh_keys: { key_name:fingerprint }
                    }
         }"""
-        service = Service(AuthProtocol('vcs-auth-data'))
-        service.request_json({"project_uri":self.projectname(uri)})
+        auth_service = Service(AuthProtocol('vcs-auth-data'))
+        auth_service.request_json({"project_uri":self.projectname(uri)})
+        pushctl_service= Service(AuthProtocol('pushctl-state'))
+        pushctl_service.request_json()
         def NoDataHandler(fail):
             fail.trap(ConchError)
             message = fail.value.value
             log.err(message)
             # Return a stub auth_service object
             return {"users":{}, "repo_id":None}
-        service.addErrback(NoDataHandler)
-        return service.deferred
+        auth_service.addErrback(NoDataHandler)
+        return DeferredList([auth_service.deferred, pushctl_service.deferred])
 
     def repopath(self, scheme, subpath):
         '''Note, this is where we do further mapping into a subdirectory
@@ -133,6 +136,20 @@ class GitSession(object):
             return users[username]
         else:
             return None
+
+    def pushcontrol(self, deferred_results, argv):
+        auth_result, pushctl_result = deferred_results
+        auth_status, auth_service = auth_result
+        pushctl_status, pushctl_service = pushctl_result
+        if pushctl_status and auth_status:
+            # TODO: compare against argv
+            # Good to continue with auth
+            return auth_service
+        elif not auth_status:
+            # This will be a failure, not the auth data in this case
+            return auth_service
+        else:
+            return pushctl_service
 
     def auth(self, auth_service, argv):
         """Verify we have permission to run the request command."""
@@ -235,6 +252,8 @@ class GitSession(object):
         argv = shlex.split(cmd)
         # This starts an auth request and returns.
         auth_service_deferred = self.user.meta.request(argv[-1])
+        # Check if pushes are disabled for this path
+        auth_service_deferred.addCallback(self.pushcontrol, argv)
         # Once it completes, auth is run
         auth_service_deferred.addCallback(self.auth, argv)
         # Then the result of auth is passed to execGitCommand to run git-shell
