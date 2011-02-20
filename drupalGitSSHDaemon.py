@@ -172,7 +172,7 @@ class GitSession(object):
         if (not self.user.meta.anonymousReadAccess or \
                 'git-upload-pack' not in argv[:-1]):
             # First, error out if the project itself is disabled.
-            if not auth_service["status"]:
+            if auth_service["status"] == "0":
                 error = "Project {0} has been disabled.".format(projectname)
                 return Failure(ConchError(error))
             # If anonymous access for this type of command is not allowed,
