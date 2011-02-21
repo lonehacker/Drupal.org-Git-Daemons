@@ -142,9 +142,20 @@ class GitSession(object):
         auth_status, auth_service = auth_result
         pushctl_status, pushctl_service = pushctl_result
         if pushctl_status and auth_status:
-            # TODO: compare against argv
-            # Good to continue with auth
-            return auth_service
+            mask = auth_service["repo_group"] & pushctl_service
+            if mask:
+                error = "Pushes for this type of repo are currently disabled."
+                # This type of repo has pushes disabled
+                if mask & 0x01:
+                    error = "Pushes to core are currently disabled."
+                if mask & 0x02:
+                    error = "Pushes to projects are currently disabled."
+                if mask & 0x04:
+                    error = "Pushes to sandboxes are currently disabled."
+                return Failure(ConchError(error))
+            else:
+                # Good to continue with auth
+                return auth_service
         elif not auth_status:
             # This will be a failure, not the auth data in this case
             return auth_service
