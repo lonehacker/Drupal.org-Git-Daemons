@@ -95,7 +95,7 @@ class DrupalMeta(object):
         for part in parts:
             if len(part) > 4 and part[-4:] == '.git':
                 return part[:-4]
-        log.err("ERROR: Couldn't determine project name for '{0}'.".format(uri))
+        raise ConchError("Could not determine project name from url.")
 
 def find_error_script():
     for directory in sys.path:
@@ -262,14 +262,19 @@ class GitSession(object):
         """Execute a git-shell command."""
         argv = shlex.split(cmd)
         # This starts an auth request and returns.
-        auth_service_deferred = self.user.meta.request(argv[-1])
-        # Check if pushes are disabled for this path
-        auth_service_deferred.addCallback(self.pushcontrol, argv)
-        # Once it completes, auth is run
-        auth_service_deferred.addCallback(self.auth, argv)
-        # Then the result of auth is passed to execGitCommand to run git-shell
-        auth_service_deferred.addCallback(self.execGitCommand, argv, proto)
-        auth_service_deferred.addErrback(self.errorHandler, proto)
+        try:
+            auth_service_deferred = self.user.meta.request(argv[-1])
+        except ConchError, e:
+            # The request could not be started
+            self.errorHandler(Failure(e), proto)
+        else:
+            # Check if pushes are disabled for this path
+            auth_service_deferred.addCallback(self.pushcontrol, argv)
+            # Once it completes, auth is run
+            auth_service_deferred.addCallback(self.auth, argv)
+            # Then the result of auth is passed to execGitCommand to run git-shell
+            auth_service_deferred.addCallback(self.execGitCommand, argv, proto)
+            auth_service_deferred.addErrback(self.errorHandler, proto)
 
     def execGitCommand(self, auth_values, argv, proto):
         """After all authentication is done, setup an environment and execute the git-shell commands."""
