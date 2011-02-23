@@ -144,6 +144,9 @@ class GitSession(object):
         auth_result, pushctl_result = deferred_results
         auth_status, auth_service = auth_result
         pushctl_status, pushctl_service = pushctl_result
+        if not auth_service:
+            error = "Repository does not exist. Check that your URL is correct."
+            raise ConchError(error)
         if pushctl_status and auth_status:
             mask = auth_service["repo_group"] & pushctl_service
             if mask:
