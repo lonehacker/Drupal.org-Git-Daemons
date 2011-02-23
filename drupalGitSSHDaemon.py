@@ -83,6 +83,8 @@ class DrupalMeta(object):
             # Fall back to the default configured path scheme
             scheme_path = config.get('drupalSSHGitServer', 'repositoryPath')
         path = os.path.join(scheme_path, *subpath)
+        if path[-4:] != ".git":
+            path += ".git"
         # Check to see that the folder exists
         if not os.path.exists(path):
             return None
@@ -92,10 +94,11 @@ class DrupalMeta(object):
         '''Extract the project name alone from a path like /project/views.git'''
 
         parts = uri.split('/')
-        for part in parts:
-            if len(part) > 4 and part[-4:] == '.git':
-                return part[:-4]
-        raise ConchError("Could not determine project name from url.")
+        project = parts[-1]
+        if len(project) > 4 and project[-4:] == '.git':
+            return project[:-4]
+        else:
+            return project
 
 def find_error_script():
     for directory in sys.path:
