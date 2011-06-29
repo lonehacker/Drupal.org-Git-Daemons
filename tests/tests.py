@@ -1,4 +1,6 @@
 #! /usr/bin/python
+import sys
+sys.path.append('/Library/Python/2.6/site-packages/Drupal.org-Git-Daemons')
 from drupalGitSSHDaemon import *
 from twisted.cred.credentials import UsernamePassword, SSHPrivateKey
 import random
