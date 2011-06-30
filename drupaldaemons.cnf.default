@@ -7,7 +7,7 @@
 ;privateKeyLocation=example-key/key
 privateKeyLocation=/etc/twisted-keys/default
 ; Set the hostname this server should run on.
-host=localhost
+host=
 ; Set the port this server should run on.
 port=2222
 ; Default git repository path
@@ -26,9 +26,9 @@ repositoryPath=/git/project
 
 [drush-settings]
 ; Set this to the path of your drupal site you wish to authenticate against
-webroot=/Applications/XAMPP/htdocs/drupal-6.22
+webroot=/var/www/drupal
 ; Set this to the path the the drush script on your local machine.
-drushPath=/Users/rajeel/Downloads/drush/drush
+drushPath=/usr/bin/drush
 
 [http-settings]
 ; Set this if using http service auth
