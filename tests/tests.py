@@ -1,12 +1,15 @@
 #! /usr/bin/python
 import sys
 sys.path.append('/Library/Python/2.6/site-packages/Drupal.org-Git-Daemons')
+sys.path.append('/Library/Python/2.6/site-packages/Drupal.org-Git-Daemons/tests')
 from drupalGitSSHDaemon import *
 from twisted.cred.credentials import UsernamePassword, SSHPrivateKey
 import random
 from twisted.trial import unittest
 from twisted.python.failure import Failure
-
+from twisted.test import proto_helpers
+from twisted.internet import defer, protocol, reactor
+from testclient import *
 class TestPubKeyAuth(unittest.TestCase):
     user = 'test'
     fingerprint = 'e4d3b1a13c247635a4f4b9fcd1d39298'
@@ -29,8 +32,8 @@ class TestPubKeyAuth(unittest.TestCase):
     def test_bad_key(self):
         credentials = SSHPrivateKey(self.user, "ssh-rsa", self.bad_blob, self.sigData, self.privkey.sign(self.sigData))
         deferred = self.checker.requestAvatarId(credentials)
-        deferred.addErrback(self.flushLoggedErrors)
-        deferred.addCallback(self.assertEquals,[])
+        deferred.addErrback(self.errorHandler)
+        deferred.addCallback(self.assertEquals,"Login error")
         return deferred
     def test_good_key_git(self):
         credentials = SSHPrivateKey(self.user, "ssh-rsa", self.blob, self.sigData, self.privkey.sign(self.sigData))
@@ -40,10 +43,12 @@ class TestPubKeyAuth(unittest.TestCase):
     def test_bad_key_git(self):
         credentials = SSHPrivateKey(self.user, "ssh-rsa", self.bad_blob, self.sigData, self.privkey.sign(self.sigData))
         deferred = self.checker.requestAvatarId(credentials)
-        deferred.addErrback(self.flushLoggedErrors)
-        deferred.addCallback(self.assertEquals,[])
+        deferred.addErrback(self.errorHandler)
+        deferred.addCallback(self.assertEquals,"Login error")
         return deferred
-
+    def errorHandler(self,failure):
+        failure.trap(UnauthorizedLogin)
+        return "Login error"
 class TestPasswordAuth(unittest.TestCase):
     user = 'test'
     password = 'Thai1mil3ahb'
@@ -61,10 +66,41 @@ class TestPasswordAuth(unittest.TestCase):
     def test_bad_password(self):
         credentials = UsernamePassword(self.user, "the wrong password")
         deferred = self.checker.requestAvatarId(credentials)
-        deferred.addErrback(self.flushLoggedErrors)
-        #deferred.addCallback(self.assertEqual,failure)
-        deferred.addCallback(self.assertEquals,[])
+        deferred.addErrback(self.errorHandler)
+        deferred.addCallback(self.assertEquals,"Login error")
         return deferred
+    def errorHandler(self,failure):
+        failure.trap(UnauthorizedLogin)
+        return "Login error"
+class TestAccountStatus(unittest.TestCase):
+     def setUp(self):
+         log.startLogging(sys.stdout, setStdout=0)
+         ssh_server = Server()
+         self.server = reactor.listenTCP(ssh_server.port, 
+                      ssh_server.application(), 
+                      interface=ssh_server.interface)
+         return self.server
+     def tearDown(self):
+         server, self.server = self.server,None
+         return server.stopListening()
+     def _test(self,cmd,user,expected):
+         def got_data(data):
+             self.assertEquals(data,expected)
+         self.factory = SimpleFactory()
+         self.factory.protocol = SimpleTransport
+         self.factory.command = cmd
+         self.factory.user = user
+         reactor.connectTCP('localhost',22,self.factory)
+         self.factory.deferred.addCallback(got_data)
+         return self.factory.deferred
+     def test_repository_not_found(self):
+         user = 'webchick'
+         cmd = 'git-receive-pack \'project/drupal.git\''
+         expected = "0069ERR The remote repository at 'project/drupal.git' does not exist. Verify that your remote is correct.\n"
+         return self._test(cmd,user,expected)
+"""client code """
 
+        
+"""end client code"""
 if __name__ == '__main__':
     unittest.main()
