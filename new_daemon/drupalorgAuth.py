@@ -143,7 +143,7 @@ class DrupalMeta(object):
     def __init__(self):
         self.anonymousReadAccess = config.getboolean('drupalSSHGitServer', 'anonymousReadAccess')
         self.utilobj = Util()
-    def request(self, uri):
+    def request(self,isLocal,uri):
         """Build the request to run against drupal
 
         request(project uri)
@@ -164,6 +164,8 @@ class DrupalMeta(object):
                     ssh_keys: { key_name:fingerprint }
                    }
         }"""
+        if not isLocal:
+           return Failure("Repository is not local")
         auth_service = Service(AuthProtocol('vcs-auth-data'))
         auth_service.request_json({"project_uri":self.utilobj.getprojectname(uri)})
         pushctl_service= Service(AuthProtocol('pushctl-state'))

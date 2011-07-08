@@ -38,7 +38,7 @@ class DrupalMeta(object):
     def __init__(self):
         self.anonymousReadAccess = config.getboolean('drupalSSHGitServer', 'anonymousReadAccess')
 
-    def request(self, uri):
+    def request(self, isLocal,uri):
         """Build the request to run against drupal
 
         request(project uri)
@@ -59,6 +59,8 @@ class DrupalMeta(object):
                     ssh_keys: { key_name:fingerprint }
                    }
         }"""
+        if not isLocal:
+            return Failure(ConchError("Repository is not local"))
         auth_service = Service(AuthProtocol('vcs-auth-data'))
         auth_service.request_json({"project_uri":self.projectname(uri)})
         pushctl_service= Service(AuthProtocol('pushctl-state'))
@@ -182,7 +184,7 @@ class GitSession(object):
             password = None
 
         # Check permissions by mapping requested path to file system path
-        repostring = argv[-1]
+        """repostring = argv[-1]
         repolist = repostring.split('/')
         if repolist[0]:
             # No leading /
@@ -194,12 +196,12 @@ class GitSession(object):
         repopath = self.user.meta.repopath(scheme, projectpath)
         if not repopath:
             return Failure(ConchError("The remote repository at '{0}' does not exist. Verify that your remote is correct.".format(repostring)))
-        projectname = self.user.meta.projectname(repostring)
+        projectname = self.user.meta.projectname(repostring)"""
 
         # Map the user
         users = auth_service["users"]
         user = self.map_user(self.user.username, fingerprint, users)
-        execGitCommand = repopath, user, auth_service
+        execGitCommand = user, auth_service
 
         # Check to see if anonymous read access is enabled and if
         # this is a read
@@ -268,23 +270,24 @@ class GitSession(object):
         """Execute a git-shell command."""
         argv = shlex.split(cmd)
         # This starts an auth request and returns.
-        try:
-            auth_service_deferred = self.user.meta.request(argv[-1])
-        except ConchError, e:
-            # The request could not be started
-            self.errorHandler(Failure(e), proto)
-        else:
+        repostring = argv[-1]
+        self.router = Router(repostring,self.user)
+        self.router.route()
+        auth_service_deferred = self.router.deferred
+        auth_service_deferred.addCallback(self.user.meta.request,argv[-1])
             # Check if pushes are disabled for this path
-            auth_service_deferred.addCallback(self.pushcontrol, argv)
+        auth_service_deferred.addCallback(self.pushcontrol, argv)
             # Once it completes, auth is run
-            auth_service_deferred.addCallback(self.auth, argv)
+        auth_service_deferred.addCallback(self.auth, argv)
             # Then the result of auth is passed to execGitCommand to run git-shell
-            auth_service_deferred.addCallback(self.execGitCommand, argv, proto)
-            auth_service_deferred.addErrback(self.errorHandler, proto)
+        auth_service_deferred.addCallback(self.execGitCommand, argv, proto)
+        auth_service_deferred.addErrback(self.errorHandler, proto)
 
     def execGitCommand(self, auth_values, argv, proto):
         """After all authentication is done, setup an environment and execute the git-shell commands."""
-        repopath, user, auth_service = auth_values
+        print "here"
+        user, auth_service = auth_values
+        repopath = self.router.repopath
         sh = self.user.shell
         repo_id = auth_service["repo_id"]
         
@@ -302,7 +305,47 @@ class GitSession(object):
 
     def closed(self): pass
 
+class Router(object):
+   
+   def __init__(self,repostring,user):
+        repolist = repostring.split('/')
+        self.user = user
+        self.repostring = repostring
+        self.deferred = defer.Deferred()
+        if repolist[0]:
+            # No leading /
+            self.scheme = repolist[0]
+            self.projectpath = repolist[1:]
+        else:
+            self.scheme = repolist[1]
+            self.projectpath = repolist[2:]    
+   def gotrepo(self,repopath):
+        self.repopath = repopath
+        return self.isLocal
+   def route(self):
+        self.getrepopath(self.scheme, self.projectpath)
+        self.deferred.addCallback(self.gotrepo)
+        self.projectname = self.user.meta.projectname(self.repostring)
+   def getrepopath(self, scheme, subpath):
+        '''Note, this is where we do further mapping into a subdirectory
+        for a user or issue's specific sandbox'''
 
+        # Build the path to the repository
+        self.isLocal = True
+        try:
+            scheme_path = config.get(scheme, 'repositoryPath')
+        except:
+            # Fall back to the default configured path scheme
+            scheme_path = config.get('drupalSSHGitServer', 'repositoryPath')
+        path = os.path.join(scheme_path, *subpath)
+        if path[-4:] != ".git":
+            path += ".git"
+        # Check to see that the folder exists
+        """if not os.path.exists(path):
+            self.deferred.errback(Failure(ConchError("The remote repository at '{0}' does not exist. Verify that your remote is correct.".format(self.repostring))))
+        else:
+            self.deferred.callback(path)"""
+        self.deferred.callback("/Users/rajeel/Drupal.org-Git-Daemons.git")
 class GitConchUser(ConchUser):
     shell = find_git_shell()
     error_script = find_error_script()
