@@ -10,7 +10,6 @@ from service import Service
 from service.protocols import AuthProtocol
 class GitPubKeyChecker(object):
     """Skip most of the auth process until the SSH session starts.
-
     Save the public key fingerprint for later use and verify the signature."""
     credentialInterfaces = ISSHPrivateKey,
     interface.implements(ICredentialsChecker)

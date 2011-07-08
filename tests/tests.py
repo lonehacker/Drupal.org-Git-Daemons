@@ -1,7 +1,5 @@
 #! /usr/bin/python
 import sys
-sys.path.append('/Library/Python/2.6/site-packages/Drupal.org-Git-Daemons')
-sys.path.append('/Library/Python/2.6/site-packages/Drupal.org-Git-Daemons/tests')
 from drupalGitSSHDaemon import *
 from twisted.cred.credentials import UsernamePassword, SSHPrivateKey
 import random
@@ -98,9 +96,5 @@ class TestAccountStatus(unittest.TestCase):
          cmd = 'git-receive-pack \'project/drupal.git\''
          expected = "0069ERR The remote repository at 'project/drupal.git' does not exist. Verify that your remote is correct.\n"
          return self._test(cmd,user,expected)
-"""client code """
-
-        
-"""end client code"""
 if __name__ == '__main__':
     unittest.main()

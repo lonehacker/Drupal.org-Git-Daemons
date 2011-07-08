@@ -20,7 +20,6 @@ class Authenticator(object):
     def __init__(self,user):
         self.user = user
     def pushcontrol(self, deferred_results, argv):
-        print "In Pshctl\n\n\n"
         auth_result, pushctl_result = deferred_results
         auth_status, auth_service = auth_result
         pushctl_status, pushctl_service = pushctl_result
@@ -44,13 +43,10 @@ class Authenticator(object):
                 return auth_service
         elif not auth_status:
             # This will be a failure, not the auth data in this case
-            print "You're Good \n\n"
             return auth_service
         else:
-            print "You're Good 2 \n\n"
             return pushctl_service
     def auth(self, auth_service, argv):
-     
         """Verify we have permission to run the request command."""
         # Key fingerprint
         if hasattr(self.user.meta, "fingerprint"):

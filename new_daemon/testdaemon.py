@@ -24,14 +24,7 @@ from executor import Executor
 # Seems related to Twisted bug #4350
 # See: http://twistedmatrix.com/trac/ticket/4350
 SSHSessionProcessProtocol.outConnectionLost = lambda self: None
-
-import urllib
-import base64
-import hashlib
-import json
-
 from config import config
-from service import Service
 from service.protocols import AuthProtocol
 
 class GitSession(object):
@@ -39,11 +32,9 @@ class GitSession(object):
     
     def __init__(self, user):
         self.user = user
-        print "Started Session\n\n"
     def execCommand(self, proto, cmd):
         """Execute a git-shell command."""
         # This starts an auth request and returns.
-        print "In execCommand Command is "+cmd+"\n\n\n"
         executor = Executor(cmd,self.user,proto)
         executor.execute()
     def eofReceived(self): pass
