@@ -9,6 +9,5 @@ class GitRealm(object):
         self.meta = meta
 
     def requestAvatar(self, username, mind, *interfaces):
-        print "Avatar Requested \n\n"
         user = GitConchUser(username, self.meta)
         return interfaces[0], user, user.logout

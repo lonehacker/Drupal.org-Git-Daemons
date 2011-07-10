@@ -1,35 +1,43 @@
 from twisted.python.failure import Failure
 from twisted.conch.error import ConchError, UnauthorizedLogin, ValidPublicKey
 from config import config
-from utils import Util
 import os
 from twisted.internet import defer
 
 class Router(object):
    
    def __init__(self,repostring):
-        repolist = repostring.split('/')
-        self.utilobj = Util()
+        
         self.repostring = repostring
         self.deferred = defer.Deferred()
-        if repolist[0]:
-            # No leading /
-            self.scheme = repolist[0]
-            self.projectpath = repolist[1:]
-        else:
-            self.scheme = repolist[1]
-            self.projectpath = repolist[2:]    
+            
    def gotrepo(self,repopath):
         self.repopath = repopath
         return self.isLocal
    def route(self):
-        self.getrepopath(self.scheme, self.projectpath)
+        self.getrepopath()
         self.deferred.addCallback(self.gotrepo)
-        self.projectname = self.utilobj.getprojectname(self.repostring)
-   def getrepopath(self, scheme, subpath):
+   def getrepopath(self):
         '''Note, this is where we do further mapping into a subdirectory
         for a user or issue's specific sandbox'''
-
+        self.map_repo()
+        # Check to see that the folder exists
+        if not os.path.exists(path):
+            self.deferred.errback(Failure(ConchError("The remote repository at '{0}' does not exist. Verify that your remote is correct.".format(self.repostring))))
+        else:
+            self.deferred.callback(path)
+    
+    def map_repo(self):
+        '''Function that returns the repository path'''
+        repolist = self.repostring.split('/')
+        self.projectname = self.getprojectname(self.repostring)
+        if repolist[0]:
+            # No leading /
+            scheme = repolist[0]
+            projectpath = repolist[1:]
+        else:
+            scheme = repolist[1]
+            projectpath = repolist[2:]
         # Build the path to the repository
         self.isLocal = True
         try:
@@ -40,8 +48,13 @@ class Router(object):
         path = os.path.join(scheme_path, *subpath)
         if path[-4:] != ".git":
             path += ".git"
-        # Check to see that the folder exists
-        if not os.path.exists(path):
-            self.deferred.errback(Failure(ConchError("The remote repository at '{0}' does not exist. Verify that your remote is correct.".format(self.repostring))))
+    
+    def getprojectname(self, uri):
+        '''Extract the project name alone from a path like /project/views.git'''
+
+        parts = uri.split('/')
+        project = parts[-1]
+        if len(project) > 4 and project[-4:] == '.git':
+            return project[:-4]
         else:
-            self.deferred.callback(path)
+            return project
