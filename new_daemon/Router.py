@@ -20,14 +20,14 @@ class Router(object):
    def getrepopath(self):
         '''Note, this is where we do further mapping into a subdirectory
         for a user or issue's specific sandbox'''
-        self.map_repo()
+        path = self.map_repo()
         # Check to see that the folder exists
         if not os.path.exists(path):
             self.deferred.errback(Failure(ConchError("The remote repository at '{0}' does not exist. Verify that your remote is correct.".format(self.repostring))))
         else:
             self.deferred.callback(path)
     
-    def map_repo(self):
+   def map_repo(self):
         '''Function that returns the repository path'''
         repolist = self.repostring.split('/')
         self.projectname = self.getprojectname(self.repostring)
@@ -45,11 +45,11 @@ class Router(object):
         except:
             # Fall back to the default configured path scheme
             scheme_path = config.get('drupalSSHGitServer', 'repositoryPath')
-        path = os.path.join(scheme_path, *subpath)
+        path = os.path.join(scheme_path, *projectpath)
         if path[-4:] != ".git":
             path += ".git"
-    
-    def getprojectname(self, uri):
+        return path
+   def getprojectname(self, uri):
         '''Extract the project name alone from a path like /project/views.git'''
 
         parts = uri.split('/')
