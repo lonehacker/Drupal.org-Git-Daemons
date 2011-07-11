@@ -16,7 +16,7 @@ from twisted.python import components, log
 from twisted.python.failure import Failure
 from zope import interface
 from checkers import GitPubKeyChecker, GitPasswordChecker
-from drupalorgAuth import DrupalMeta
+from Authenticator.drupalorgAuth import DrupalMeta
 from users import GitConchUser
 from realms import GitRealm
 from executor import Executor

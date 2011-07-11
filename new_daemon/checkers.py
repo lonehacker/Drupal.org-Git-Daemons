@@ -16,7 +16,6 @@ class GitPubKeyChecker(object):
     interface.implements(ICredentialsChecker)
     def __init__(self, meta):
         self.meta = meta
-
     def verify(self, username, credentials, key):
         # Verify the public key signature
         # From twisted.conch.checkers.SSHPublicKeyDatabase._cbRequestAvatarId
