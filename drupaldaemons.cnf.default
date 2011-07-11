@@ -7,18 +7,29 @@
 ;privateKeyLocation=example-key/key
 privateKeyLocation=/etc/twisted-keys/default
 ; Set the hostname this server should run on.
-host=
+host=localhost
 ; Set the port this server should run on.
-port=2222
+port=22
 ; Default git repository path
 repositoryPath=/git/project
 ; Allow anonymous users to read all repositories (clone and pull)
 anonymousReadAccess=true
 ; Auth service protocol (drush or http)
-authServiceProtocol=drush
+authServiceProtocol=stub_service
 
 ; Per scheme paths
-
+[application]
+;Set the names of modules to be used for various custom functionality
+;AuthModule=Pluggable Module Handling Authentication
+AuthModule=DrupalorgAuthenticator
+;KeyIdentifier=Pluggable Module Identifying user given Key
+KeyIdentifier=SSHKeyIdentifier
+;PassIdentifier=Pluggable Module Identifying user given password
+PassIdentifier=SSHPassIdentifier
+;EnvModule=Pluggable Module Setting environment 
+EnvModule=DrupalorgEnv
+;RouterModule=Pluggable Module handling routing of requests
+RouterModule=DrupalRouter
 [project]
 repositoryPath=/git/project
 
@@ -26,14 +37,14 @@ repositoryPath=/git/project
 
 [drush-settings]
 ; Set this to the path of your drupal site you wish to authenticate against
-webroot=/var/www/drupal
+webroot=/Applications/XAMPP/htdocs/drupal-6.22
 ; Set this to the path the the drush script on your local machine.
-drushPath=/usr/bin/drush
+drushPath=/Users/rajeel/Drupal.org-Git-Daemons/testscript
 
 [http-settings]
 ; Set this if using http service auth
-serviceUrl=http://git.example.tld/auth_service_path/
+serviceUrl=http://localhost/drupal-6.22/drupalorg/
 ; HTTP Host: header setting
-;hostHeader=git.example.tld
+;hostHeader=drupal.org:8888
 ; HTTP auth
 ;httpAuth=username:password
