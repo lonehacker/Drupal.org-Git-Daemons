@@ -16,7 +16,6 @@ from twisted.python import components, log
 from twisted.python.failure import Failure
 from zope import interface
 from checkers import GitPubKeyChecker, GitPasswordChecker
-from Authenticator.drupalorgAuth import DrupalMeta
 from users import GitConchUser
 from realms import GitRealm
 from executor import Executor
@@ -26,6 +25,10 @@ from executor import Executor
 SSHSessionProcessProtocol.outConnectionLost = lambda self: None
 from config import config
 from service.protocols import AuthProtocol
+
+class DrupalMeta(object):
+    def __init__(self):
+        self.anonymousReadAccess = config.getboolean('drupalSSHGitServer', 'anonymousReadAccess')
 
 class GitSession(object):
     interface.implements(ISession)
@@ -61,7 +64,6 @@ class Server(object):
 
     def application(self):
         return GitServer(self.key)
-
 if __name__ == '__main__':
     log.startLogging(sys.stderr)
     ssh_server = Server()

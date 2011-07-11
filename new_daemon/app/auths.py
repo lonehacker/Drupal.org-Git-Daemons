@@ -8,7 +8,7 @@ from Authenticator.interfaces import IAuthenticator
 from config import config
 from service import Service
 from service.protocols import AuthProtocol
-from Router import Router
+from router import Router
 import os
 import urllib
 import base64
@@ -193,7 +193,4 @@ class DrupalorgAuthenticator(object):
             return users[username]
         else:
             return None
-class DrupalMeta(object):
-    def __init__(self):
-        self.anonymousReadAccess = config.getboolean('drupalSSHGitServer', 'anonymousReadAccess')
-        
+ 

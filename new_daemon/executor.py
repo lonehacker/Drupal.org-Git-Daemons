@@ -4,7 +4,7 @@ from twisted.conch.error import ConchError
 from twisted.python import components, log
 from twisted.internet import reactor, defer
 from Authenticator import Authenticator
-from Router import Router
+from router import Router
 from env import Env
 class Executor(object):
     def __init__(self,cmd,user,proto):
